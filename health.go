@@ -8,18 +8,20 @@ import (
 
 // HealthResponse is the standard shape all hydra services return from /api/v1/health.
 type HealthResponse struct {
-	Service       string         `json:"service"`
-	Version       string         `json:"version"`
-	District      string         `json:"district"`
-	UptimeSeconds int            `json:"uptime_seconds"`
-	Status        string         `json:"status"`          // "ok" or "degraded"
-	Extra         map[string]any `json:"extra,omitempty"` // tool-specific fields
+	Service       string            `json:"service"`
+	Version       string            `json:"version"`
+	District      string            `json:"district"`
+	UptimeSeconds int               `json:"uptime_seconds"`
+	Status        string            `json:"status"`                    // "ok" or "degraded"
+	Extra         map[string]any    `json:"extra,omitempty"`           // tool-specific fields
+	Dependencies  map[string]string `json:"dependencies,omitempty"`    // internal hydra module deps
 }
 
 // NewHealthHandler returns an http.HandlerFunc that serves a standard health response.
 // The extraFn callback is called on each request to populate tool-specific fields.
 // Pass nil for extraFn if no extra fields are needed.
 func NewHealthHandler(service, version, district string, startTime time.Time, extraFn func() map[string]any) http.HandlerFunc {
+	deps := HydraDependencies()
 	return func(w http.ResponseWriter, r *http.Request) {
 		uptime := int(math.Round(time.Since(startTime).Seconds()))
 
@@ -46,6 +48,7 @@ func NewHealthHandler(service, version, district string, startTime time.Time, ex
 			UptimeSeconds: uptime,
 			Status:        status,
 			Extra:         extra,
+			Dependencies:  deps,
 		})
 	}
 }
